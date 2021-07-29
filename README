@@ -1,0 +1,116 @@
+HTTP Client - Oprea Theodor-Alin - 324CC
+Time to implement: 10 hours
+
+---------------- The functionality ----------------
+
+For this assignment I modified the previously implmented HTTP lab, by
+modifying the requests.cpp and the client.cpp files. The application works as
+follows: the client is started using the command ./client or make run (using
+the makefile) and the program starts listening for commands, which will be
+interpreted in an event loop. In order to keep track of the current state of
+applciation (whether the client has loged in, entered the library or loged out)
+I store the authentication cookie and the access token in 2 variables, which,
+based on their value, the program can determine what commands can process and
+what HTTP requests can make.
+
+---------------- The HTTP requests ----------------
+
+I started building the requests.cpp file on top of the requests.c file from the
+HTTP lab, which only contained a GET Request builder and a Post Request builder
+which I modified in order to send to these functions a string as the body of
+the request, not an array of strings, since I could build the intended body in
+the event loop in the client.cpp file using a json object. Also, I added an
+extra "token" parameter so I can authenticate when I need to perform certain
+tasks inside the library, if the extra parameter is null, no token is added to
+the request message. I added a DELETE Request builder function, which is
+similar to the GET request, the only difference is that the request header is
+modified from GET to DELETE. Simmilar to the GET Request, the POST Request now
+takes a string as the body of the request and has an extra argument, the token
+argument, which if is null, the token is omitted, otherwise, the token is added
+to the request, respecting the format: Authorization: Bearer token.
+
+---------------- The Client ----------------
+
+I initially set all the nedded access routes to the server, the address of the
+remote server and the type of the messages sent and recieved. In the event loop
+the program expects command that will further interpret:
+
+- register: prints the expected input, username and password and reads them in
+2 variables which will populate a json object. The json object is used to
+compute the POST message which will be sent to the server. A connection between
+the client and the server is opened and the request is printed in the terminal
+and sent to the server, the response being printed raw in the terminal and the
+client - server connection closed.
+
+- login: similarly to the register command, a username and a password are
+requested, a json obsect is formed with them and a POST Request is computed,
+based on the json object for the body of the request. The Request is then
+printed in the terminal, as well as the server response (after a connection is
+enabled). A cookie is extracted from the response, by searching the index of
+the "connect.sid" sequence, which is the start of the cookie and the index of
+the "; Path=" sequence, which is the end of the cookie. After extracting the
+substring from between these 2 indexes we store it in the cookie variable.
+
+- enter_library: if the cookie variable is set, it means that the user has
+logged in and we can proceed in the library. We create a GET request in which
+we store the already recieved cookie and send it to the server. After printing
+the messages, the sent and the recieved, we extract the string that starts with
+the sequence {token:" and ends with "} and store the extracted string into the
+token variable. The value 10 is used relative to the indexes because it is the
+extra length due to the initial sequence, {token:".
+
+- get_books: if the token variable is set, then the user is logged in and has
+entered the library, so we can proceed to compute a GET Request with the
+already stored token. After we send (and print) the computed HTTP GET Request,
+we can print the recieved message, since the array of books is stored in the
+body of the HTTP Response, in json format.
+
+- add_book: if the user is logged in and has acces to the library (with the
+existance of the token) we can compute a POST Request with the body of the
+request already computed as a json object (from STDIN, the client being
+prompted the required information). We then print the computed message and
+the answer from the server and close the connection.
+
+- get_book: similarly to the get_books command, we compute a GET Request with
+the stored token after we build the route of the api, which will be built as
+the route of the get_books api, to which we append "/id", id being the id of
+the needed book.
+
+- delete_book: if the client is logged in and has acces to the library, we can
+prompt them with the id of the book they want to delete, compute a DELETE
+request at the route of the given book, similarly to the get_book command, we
+append to the books route the sequence "/id", where the id is the number
+inserted by the client when prompted so. After prining the sent HTTP Request
+and the response from the server, the connection is closed.
+
+- logout: upong giving the logout command, if the client is logged in, we send
+a GET Request at the corresponding logout route and clear the cookie and token
+variables so if the client tries to perform access requiring actions, they will
+be warned that they are not logged in.
+
+- exit: the command that signals the client to close the program.
+
+---------------- Sources of inspiration ----------------
+
+The program is built on top of the HTTP lab, the requests.cpp file
+modifications are explained in the Requests part of the readme and the Client
+logic is simmilar to that from the lab, the main change being the fact that
+the client interprets commands in an event loop, other elements are simmilar,
+such as keeping the address of the server, the content type of the requests'
+bodies and the routes to the different apis statically initialised firstly in
+the main function. The requests are handled similarly to the lab methods, the
+arguments for the computing functions are computed locally, depending on the
+desired effect, being then passed to these and then transmitted to the server.
+
+---------------- Feedback ----------------
+
+The most interesting and fun assignment (although all PCom assignments were
+interesting in their own way, the Router to see how that layer works and the
+server client app to see a new way to develop interactive apps that work on
+multiple computers, with a central server being required ofc), the only thing
+that I think would improve it would be to add some task to use a PUT Request
+as well, maybe to change details of a book, to complete the GET, POST, DELETE,
+PUT set of "basic" HTTP requests for a full stack developer.
+
+Unfortunatelly, the server provided by the course's team is no longer available
+
